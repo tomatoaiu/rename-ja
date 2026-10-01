@@ -1,0 +1,13 @@
+{
+  "name": "tomatoaiu-mods",
+  "description": "tomatoaiu が公開している Claude Code の mod。",
+  "owner": {
+    "name": "tomatoaiu"
+  },
+  "plugins": [
+    {
+      "name": "rename-ja",
+      "source": "./"
+    }
+  ]
+}

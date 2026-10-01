@@ -1,0 +1,10 @@
+{
+  "name": "rename-ja",
+  "description": "引数なしの /rename で、会話内容から日本語のセッション名を生成する。",
+  "author": {
+    "name": "tomatoaiu"
+  },
+  "homepage": "https://github.com/tomatoaiu/rename-ja",
+  "repository": "https://github.com/tomatoaiu/rename-ja",
+  "license": "MIT"
+}
