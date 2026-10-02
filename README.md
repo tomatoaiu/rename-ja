@@ -49,17 +49,57 @@ claude plugin install rename-ja@tomatoaiu-mods
 
 画面には `/rename <生成された名前>` と表示されます。mod が生成した名前を引数に入れてから、組み込みの `/rename` に渡しているためです。
 
+## 設定
+
+名前を生成するときに Haiku へ渡す指示文（プロンプト）を変更できます。設定しない場合、mod は 20 文字以内の日本語名を生成する既定のプロンプトを使います。
+
+| 項目 | 型 | 内容 |
+| --- | --- | --- |
+| `prompt` | 1 行の文字列 | Haiku へ渡す指示文。会話の抜粋は、ユーザーメッセージとして別に渡されます。 |
+
+設定方法は 3 通りあります。どの方法でも、設定後に Claude Code を再起動すると反映されます。
+
+Claude Code の中で設定する場合は、次のコマンドを実行します。
+
+```
+/plugin configure rename-ja@tomatoaiu-mods
+```
+
+シェルから設定する場合は、JSON を標準入力で渡します。
+
+```sh
+echo '{"prompt":"ユーザーメッセージは会話の抜粋です。その主題を表すセッション名を1つだけ出力してください。必ず絵文字1つで始め、続けて10文字以内の日本語を書く。説明文なし。"}' \
+  | claude plugin configure rename-ja@tomatoaiu-mods --values-stdin
+```
+
+`~/.claude/settings.json` に直接書く場合は、`pluginConfigs` に追加します。
+
+```json
+{
+  "pluginConfigs": {
+    "rename-ja@tomatoaiu-mods": {
+      "options": {
+        "prompt": "Output exactly one English session name in Title Case, at most 4 words, no punctuation, no explanation. The user message is a conversation excerpt."
+      }
+    }
+  }
+}
+```
+
+プロンプトの内容にかかわらず、mod は Haiku の返答の 1 行目だけを採用し、前後の引用符を取り除き、40 文字で切ります。
+
 ## 仕組み
 
 mod は `command.run` イベントを `rename` コマンドに限定して hook します。
 
-- 引数が空のときだけ、会話の本文を Haiku に渡して、20 文字以内の日本語名を 1 つ生成します。
+- 引数が空のときだけ、会話の本文を Haiku に渡して、セッション名を 1 つ生成します。
 - 会話が長い場合、mod は冒頭 2000 字と末尾 4000 字だけを Haiku に渡します。
 - 生成に失敗した場合、mod は何も書き換えず、組み込みの `/rename` が英語名を付けます。
 
 ## 注意点
 
 - function hooks の API は、Claude Code の更新で予告なく変わる可能性があります。API が変わると、この mod は失敗し、`/rename` は組み込みの英語名に戻ります。
+- 環境変数を設定していても、Claude Code が mod を読み込まないことがあります。function hooks の読み込みは、Anthropic 側の段階的公開のフラグにも左右されるためです。このとき、`/rename` は組み込みの英語名に戻ります。
 - mod は、会話の抜粋を Haiku に送信します。送信には、セッションと同じ API クライアントと認証情報を使います。
 - `/rename` を引数なしで 1 回実行するたびに、Haiku の呼び出しが 1 回発生します。
 
