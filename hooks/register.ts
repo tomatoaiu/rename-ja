@@ -1,8 +1,4 @@
-import type { EngineInterface, On } from 'claude-code'
-
-const SYSTEM =
-  'ユーザーメッセージは会話の抜粋です。その主題を表す短い日本語のセッション名を1つだけ出力してください。' +
-  '20文字以内、体言止め、記号・引用符・改行・説明文なし。例: ログイン不具合の修正'
+import type { EngineInterface, On, PluginOptions } from 'claude-code'
 
 const HEAD_CHARS = 2000
 const TAIL_CHARS = 4000
@@ -18,7 +14,7 @@ function excerpt(transcript: string): string {
   return `${transcript.slice(0, HEAD_CHARS)}\n…\n${transcript.slice(-TAIL_CHARS)}`
 }
 
-async function generated($: EngineInterface): Promise<string> {
+async function generated($: EngineInterface, system: string): Promise<string> {
   const transcript = (await $.session.messages())
     .filter(message => message.text !== '')
     .map(message => `${message.role}: ${message.text}`)
@@ -27,17 +23,19 @@ async function generated($: EngineInterface): Promise<string> {
 
   const reply = await $.model.complete({
     model: 'haiku',
-    system: SYSTEM,
+    system,
     prompt: excerpt(transcript),
     maxTokens: 64,
   })
   return reply.isAnswered ? cleaned(reply.text) : ''
 }
 
-export function register(on: On): void {
+export function register(on: On, options: PluginOptions): void {
+  const system = String(options.prompt)
+
   on('command.run', { command: 'rename' }, async ($, e, next) => {
     if (e.args.trim() !== '') return next(e)
-    const name = await generated($)
+    const name = await generated($, system)
     return next(name === '' ? e : { ...e, args: name })
   })
 }
