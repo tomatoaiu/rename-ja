@@ -41,6 +41,8 @@ claude plugin install rename-ja@tomatoaiu-mods
 ```
 
 インストール後に Claude Code を再起動すると、mod が読み込まれます。
+配布元の `stable` ブランチは、GitHub Release として公開したコミットだけを指します。
+開発中の `main` は、通常のインストールには使いません。
 
 ## 使い方
 
@@ -105,10 +107,44 @@ mod は `command.run` イベントを `rename` コマンドに限定して hook 
 
 ## 更新とアンインストール
 
+マーケットプレイスとプラグインを更新した後、Claude Code を再起動してください。
+以前の配布元（`main` の相対パス）からインストールした場合も、同じコマンドで公開版の配布元へ切り替わります。
+
 ```sh
+claude plugin marketplace update tomatoaiu-mods
 claude plugin update rename-ja@tomatoaiu-mods
+```
+
+アンインストールする場合は、次のコマンドを実行します。
+
+```sh
 claude plugin uninstall rename-ja@tomatoaiu-mods
 ```
+
+## 開発とリリース
+
+Node.js 24 以降で、バージョン情報の整合性と hook のテストを実行できます。
+依存パッケージのインストールは不要です。
+
+```sh
+npm run check
+```
+
+Claude Code がある環境では、マニフェストも検証できます。
+この検証と上記のテストだけでは、early access の function hooks が実際に読み込まれることまでは確認できません。
+
+```sh
+claude plugin validate .claude-plugin/plugin.json --strict
+claude plugin validate .claude-plugin/marketplace.json --strict
+CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-dir .
+```
+
+バージョンは SemVer（`0.1.0` など）で管理します。
+Release Please が Conventional Commits から次のバージョンと変更履歴を含む PR を作成します。
+所有者がその PR をマージすると、Release workflow が検証、ZIP の作成、署名付き provenance の生成を実行し、ZIP とチェックサムを Immutable Release として公開します。
+workflow は公開版の署名を検証した後、`stable` を更新します。
+初回公開と GitHub の設定は、[リリース手順](docs/releasing.md)を参照してください。
+変更履歴は [CHANGELOG.md](CHANGELOG.md) に記録します。
 
 ## ライセンス
 

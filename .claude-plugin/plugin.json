@@ -1,5 +1,6 @@
 {
   "name": "rename-ja",
+  "version": "0.1.0",
   "description": "引数なしの /rename で、会話内容から日本語のセッション名を生成する。",
   "author": {
     "name": "tomatoaiu"

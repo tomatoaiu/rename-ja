@@ -7,7 +7,12 @@
   "plugins": [
     {
       "name": "rename-ja",
-      "source": "./"
+      "description": "引数なしの /rename で、会話内容から日本語のセッション名を生成する。",
+      "source": {
+        "source": "github",
+        "repo": "tomatoaiu/rename-ja",
+        "ref": "stable"
+      }
     }
   ]
 }
