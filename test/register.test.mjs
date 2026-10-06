@@ -30,6 +30,12 @@ function harness({ messages = [], reply = { isAnswered: true, text: '日本語�
   }
 }
 
+function transcriptOf(prompt) {
+  const match = /^<transcript>\n([\s\S]*)\n<\/transcript>\n\n(.+)$/.exec(prompt)
+  assert.ok(match, 'the prompt wraps the transcript and ends with a one-line request')
+  return match[1]
+}
+
 test('explicit names pass through without reading messages or calling Haiku', async () => {
   const hook = harness()
   const event = { args: ' 好きな名前 ', command: 'rename' }
@@ -61,12 +67,10 @@ test('a generated name is cleaned and forwarded with the original event fields',
   assert.equal(await hook.run(event), 'next-result')
   assert.deepEqual(hook.forwarded, [{ ...event, args: 'ログイン不具合の修正' }])
   assert.equal(event.args, ' \t')
-  assert.deepEqual(hook.requests, [{
-    model: 'haiku',
-    system: 'テスト用の指示',
-    prompt: 'user: ログインが失敗します\nassistant: 認証設定を確認します',
-    maxTokens: 64,
-  }])
+  assert.equal(hook.requests.length, 1)
+  const { prompt, ...rest } = hook.requests[0]
+  assert.deepEqual(rest, { model: 'haiku', system: 'テスト用の指示', maxTokens: 64 })
+  assert.equal(transcriptOf(prompt), 'user: ログインが失敗します\nassistant: 認証設定を確認します')
 })
 
 test('long conversations send only the head and tail', async () => {
@@ -74,7 +78,53 @@ test('long conversations send only the head and tail', async () => {
   const hook = harness({ messages: [{ role: 'user', text }] })
   await hook.run({ args: '' })
   const transcript = `user: ${text}`
-  assert.equal(hook.requests[0].prompt, `${transcript.slice(0, 2000)}\n…\n${transcript.slice(-4000)}`)
+  assert.equal(
+    transcriptOf(hook.requests[0].prompt),
+    `${transcript.slice(0, 2000)}\n…\n${transcript.slice(-4000)}`,
+  )
+})
+
+test('harness records are turned into what the person said, or dropped', async () => {
+  const hook = harness({
+    messages: [
+      {
+        role: 'user',
+        text: '<command-message>review-pr</command-message>\n' +
+          '<command-name>/review-pr</command-name>\n' +
+          '<command-args>配布用に\nまとめたい</command-args>',
+      },
+      { role: 'user', text: 'Base directory for this skill: /skills/review-pr\n\n# review-pr\n手順' },
+      { role: 'assistant', text: '配布版を作りました' },
+      { role: 'user', text: '<local-command-caveat>The command below was run directly.</local-command-caveat>' },
+      {
+        role: 'user',
+        text: '<command-name>/reload-plugins</command-name>\n' +
+          '<command-message>reload-plugins</command-message>\n' +
+          '<command-args></command-args>',
+      },
+      { role: 'user', text: '<command-name>/color</command-name>\n<local-command-stdout>Session color set to: red</local-command-stdout>' },
+      { role: 'user', text: '<system-reminder>The user named this session "x".</system-reminder>' },
+      { role: 'user', text: '<system-reminder>note</system-reminder>\n本文は残る' },
+    ],
+  })
+  await hook.run({ args: '' })
+  assert.equal(
+    transcriptOf(hook.requests[0].prompt),
+    'user: /review-pr 配布用に\nまとめたい\nassistant: 配布版を作りました\nuser: 本文は残る',
+  )
+})
+
+test('a conversation of harness records alone keeps the built-in rename behavior', async () => {
+  const hook = harness({
+    messages: [
+      { role: 'user', text: '<local-command-caveat>The command below was run directly.</local-command-caveat>' },
+      { role: 'user', text: '<command-name>/reload-plugins</command-name>\n<command-args></command-args>' },
+    ],
+  })
+  const event = { args: '' }
+  await hook.run(event)
+  assert.equal(hook.forwarded[0], event)
+  assert.equal(hook.requests.length, 0)
 })
 
 test('generated names are limited to 40 characters', async () => {
