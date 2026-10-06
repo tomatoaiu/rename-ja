@@ -15,7 +15,7 @@ Claude Code の `/rename` を引数なしで実行したときに、会話の内
 
 この mod は、Claude Code の function hooks を使います。function hooks は early access の機能で、既定では無効です。
 
-`~/.claude/settings.json` の `env` に次の 1 行を追加して、Claude Code を再起動してください。
+`~/.claude/settings.json` の `env` に `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` を追加して、Claude Code を再起動してください。
 
 ```json
 {
@@ -31,7 +31,7 @@ Claude Code の `/rename` を引数なしで実行したときに、会話の内
 CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude
 ```
 
-動作を確認した Claude Code のバージョンは 2.1.286 です。これより古いバージョンは、mod が使う API の形が異なるため、動かない可能性があります。
+動作を確認した Claude Code のバージョンは 2.1.286 と 2.1.291 です。2.1.286 より古いバージョンは、mod が使う API の形が異なるため、動かない可能性があります。
 
 ## インストール
 
